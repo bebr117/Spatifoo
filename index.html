@@ -8,21 +8,65 @@
     form {
       text-align: center;
     }
+    .table-element{
+      height: 300px;
+      border: 1px solid black;
+    }
     </style>
     <script type="text/javascript">
-      
+      function search(){
+        $("#searchResults").html("");
+        var searchStem = "https://api.spotify.com/v1/search?";
+        var xhttp = new XMLHttpRequest();
+        var searchType = $("#type option:selected").val();
+        console.log(searchType);
+        xhttp.open("GET", searchStem+"q="+encodeURIComponent($('#queryBox').val().trim())+"&"+"type="+searchType, false);
+        xhttp.send();
+        var stuff = JSON.parse(xhttp.responseText);
+        var results = stuff[searchType+"s"].items;
+        console.log(results);
+        if (results.length == 0){
+          $("#searchResults").append("<p> No results found </p>");
+        } else {
+          for (var item in results){
+            $("#searchResults").append(generateDiv(results[item]));
+          }
+        }
+      }
+
+      function generateDiv(item){
+        var result = "<div class=\"col-md-4 col-sm-6 col-xs-12 table-element\">";
+        if (item.images.length > 0){
+          var chosenImage = item.images[item.images.length - 2];
+          for (var i in item.images){
+            if (item.images[i].width == 300){
+              chosenImage = item.images[i];
+              break;
+            }
+          }
+          result+=("<div style=\"float:left;\"><img src=\""+chosenImage.url+"\" /></div>");
+        }
+        result+=("<p style=\"clear: right;\">"+item.name+"</p>");
+        result+="</div>";
+        return result;
+      }
+
+      $(document).ready(function(){
+
+      })
     </script>
   </head>
   <body>
     <form method="GET">
       Search Spotify: <input type="text" id="queryBox" /> <br />
       Type: <select id="type">
-        <option id="album"> Album </option>
-        <option id="artist"> Artist </option>
-        <option id="playlist"> Playlist </option>
-        <option id="track"> Track </option>
+        <option id="album" value="album"> Album </option>
+        <option id="artist" value="artist"> Artist </option>
+        <option id="playlist" value="playlist"> Playlist </option>
+        <option id="track" value="track"> Track </option>
       </select>
+      <input type="button" onclick="search()" value="Search!" />
     </form>
-    <p id="whatever"></p>
+    <div id="searchResults" class="row"></div>
   </body>
 </html>
