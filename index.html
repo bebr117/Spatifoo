@@ -20,18 +20,22 @@
         var xhttp = new XMLHttpRequest();
         var searchType = $("#type option:selected").val();
         console.log(searchType);
-        xhttp.open("GET", searchStem+"q="+encodeURIComponent($('#queryBox').val().trim())+"&"+"type="+searchType, false);
-        xhttp.send();
-        var stuff = JSON.parse(xhttp.responseText);
-        var results = stuff[searchType+"s"].items;
-        console.log(results);
-        if (results.length == 0){
-          $("#searchResults").append("<p> No results found </p>");
-        } else {
-          for (var item in results){
-            $("#searchResults").append(generateDiv(results[item]));
+        xhttp.onreadystatechange = function() {
+          if (xhttp.readyState == 4 && xhttp.status == 200) {
+            var stuff = JSON.parse(xhttp.responseText);
+            var results = stuff[searchType+"s"].items;
+            // console.log(results);
+            if (results.length == 0){
+              $("#searchResults").append("<p> No results found </p>");
+            } else {
+              for (var item in results){
+                $("#searchResults").append(generateDiv(results[item]));
+              }
+            }
           }
-        }
+        };
+        xhttp.open("GET", searchStem+"q="+encodeURIComponent($('#queryBox').val().trim())+"&"+"type="+searchType);
+        xhttp.send();
       }
 
       function generateDiv(item){
