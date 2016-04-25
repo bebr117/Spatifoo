@@ -12,6 +12,13 @@
       height: 300px;
       border: 1px solid black;
     }
+    .expanded-element{
+      border: 1px solid black;
+    }
+    .subdiv{
+      margin-left: 5px;
+      padding-left: 5px;
+    }
     </style>
     <script type="text/javascript">
       function search(){
@@ -29,7 +36,7 @@
               $("#searchResults").append("<p> No results found </p>");
             } else {
               for (var item in results){
-                $("#searchResults").append(generateDiv(results[item]));
+                $("#searchResults").append(generateDiv(results[item], item, searchType));
               }
             }
           }
@@ -38,8 +45,9 @@
         xhttp.send();
       }
 
-      function generateDiv(item){
-        var result = "<div class=\"col-md-4 col-sm-6 col-xs-12 table-element\">";
+      function generateDiv(item, index, type){
+        var result = "<div class=\"col-md-4 col-sm-6 col-xs-12 table-element\" id=\"item"+index
+        +"\" onclick=\"expandItem(\'item"+index+"\', \'"+type+"\')\" source=\""+item.href+"\">";
         if (item.images.length > 0){
           var chosenImage = item.images[item.images.length - 2];
           for (var i in item.images){
@@ -48,20 +56,55 @@
               break;
             }
           }
-          result+=("<div style=\"float:left;\"><img src=\""+chosenImage.url+"\" /></div>");
+          result+=("<div style=\"float:left; padding:0px 5px 0px 0px;\"><img src=\""+chosenImage.url+"\" /></div>");
         }
-        result+=("<p style=\"clear: right;\">"+item.name+"</p>");
+        result+="<div style=\"float: left;\" class=\"subdiv\">"
+        result+=("<p class=\"title\">"+item.name+"</p>");
+        result+="</div>"
         result+="</div>";
         return result;
       }
 
-      $(document).ready(function(){
+      function expandItem(id, itemType){
+        var thing1 = $('#'+id);
+        thing1.attr('class', 'col-md-12 expanded-element');
+        thing1.attr('onclick', 'function(){return;}');
+        thing2=thing1.children(".subdiv");
+        $.ajax(thing1.attr('source'), {dataType: "json"}).done(function(json){
+          switch (itemType) {
+            case 'album':
+              thing2.children('p.title').prepend("Title: ");
+              var artists = json.artists;
+              var tracks = json.tracks.items;
+              var artistList = "<p>Artist"+(artists.length <= 1 ? "" : "s")+": ";
+              for (var i in artists){
+                artistList+=artists[i].name;
+                if (i+1 != artists.length){
+                  artistList+=", ";
+                }
+              }
+              artistList+="</p>"
+              thing2.append(artistList);
+              var trackList = "<p>Track list:</p><ol style=\"list-style-position: inside;\">"
+              for (var i in tracks){
+                trackList+="<li>"+tracks[i].name+"</li>"
+              }
+              trackList+="</ol>"
+              thing2.append(trackList);
+              break;
+            default:
 
-      })
+          }
+        });
+      }
+
+      $(document).ready(function(){
+        
+      });
     </script>
   </head>
   <body>
-    <form method="GET">
+    <form action="javascript:search()">
       Search Spotify: <input type="text" id="queryBox" /> <br />
       Type: <select id="type">
         <option id="album" value="album"> Album </option>
