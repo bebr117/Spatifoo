@@ -5,22 +5,38 @@
     <script type="text/javascript" src="jQuery.js"></script>
     <title> Spotify searcher thing </title>
     <style>
+    body{
+      background-color: black;
+      color: green;
+    }
     form {
+      width: 300px;
+      margin: auto;
+      margin-bottom: 15px;
+      background-color: green;
+      color: black;
       text-align: center;
     }
     .table-element{
       height: 300px;
       border: 1px solid black;
+      color: black;
+      background-color: green;
     }
     .expanded-element{
       border: 1px solid black;
+      color: black;
+      background-color: green;
     }
     .subdiv{
       margin-left: 5px;
       padding-left: 5px;
+      overflow: auto;
     }
     </style>
     <script type="text/javascript">
+      var currentAudio = new Audio();
+
       function search(){
         $("#searchResults").html("");
         var searchStem = "https://api.spotify.com/v1/search?";
@@ -48,7 +64,7 @@
       function generateDiv(item, index, type){
         var result = "<div class=\"col-md-4 col-sm-6 col-xs-12 table-element\" id=\"item"+index
         +"\" onclick=\"expandItem(\'item"+index+"\', \'"+type+"\')\" source=\""+item.href+"\">";
-        if (item.images.length > 0){
+        if (item.images && item.images.length > 0){
           var chosenImage = item.images[item.images.length - 2];
           for (var i in item.images){
             if (item.images[i].width == 300){
@@ -66,11 +82,16 @@
       }
 
       function expandItem(id, itemType){
+        if (itemType == 'playlist'){
+          return;
+        }
         var thing1 = $('#'+id);
         thing1.attr('class', 'col-md-12 expanded-element');
         thing1.attr('onclick', 'function(){return;}');
-        thing2=thing1.children(".subdiv");
-        $.ajax(thing1.attr('source'), {dataType: "json"}).done(function(json){
+        var thing2=thing1.children(".subdiv");
+        var oauth = "BQC8fTJU6W8zoV_C5h66wV93v97qtfOK0jWHjZX41GbuJOBzXnZLFhfrM61bHbP5dDYE2PjahvWFusJqzvDIPGL1Z5270RYDCtOiMIYAjajnfmnKpavwQZeA56ycTj33ws6eZ1lRMn8LcjAjYZZ1JxlAcaQ";
+        // Wow, many secure right there.
+        $.ajax(thing1.attr('source'), {dataType: "json"/*, headers: "Authorization: Bearer " + oauth*/}).done(function(json){
           switch (itemType) {
             case 'album':
               thing2.children('p.title').prepend("Title: ");
@@ -79,11 +100,11 @@
               var artistList = "<p>Artist"+(artists.length <= 1 ? "" : "s")+": ";
               for (var i in artists){
                 artistList+=artists[i].name;
-                if (i+1 != artists.length){
+                if (i+1 >= artists.length){
                   artistList+=", ";
                 }
               }
-              artistList+="</p>"
+              artistList+="</p>";
               thing2.append(artistList);
               var trackList = "<p>Track list:</p><ol style=\"list-style-position: inside;\">"
               for (var i in tracks){
@@ -92,14 +113,62 @@
               trackList+="</ol>"
               thing2.append(trackList);
               break;
+            case 'artist':
+              thing2.children('p.title').prepend("Artist: ");
+              thing2.append("<p>Top Tracks:</p>")
+              thing2.append("<ol id=\""+json.id+"trackList\"><img src=\"http://www.arabianbusiness.com/skins/ab.main/gfx/loading_spinner.gif\" style=\"height: 100px;\" /></ol>")
+              var trackListElement = $("#"+json.id+"trackList");
+              $.ajax(thing1.attr('source')+"/top-tracks?country=US", {dataType: "json"}).done(function(json2){
+                var trackList = json2.tracks;
+                trackListElement.html('');
+                if (trackList.length != 0){
+                  for (var i = 0; i < 5;){
+                    var nextTrack = "<li> "
+                    nextTrack+=trackList[i].name;
+                    nextTrack+=" - ";
+                    nextTrack+=trackList[i].album.name;
+                    nextTrack+="</li>"
+                    trackListElement.append(nextTrack);
+                    if (trackList.length == ++i){
+                      break;
+                    }
+                  }
+                }
+              });
+            case 'track':
+              thing2.children('p.title').prepend("Track: ");
+              thing2.append("<p> Album: " + json.album.name + "</p>");
+              var artists = json.artists;
+              var artistList = "<p>Artist"+(artists.length <= 1 ? "" : "s")+": ";
+              for (var i in artists){
+                artistList+=artists[i].name;
+                if (i+1 >= artists.length){
+                  artistList+=", ";
+                }
+              }
+              artistList+="</p>";
+              thing2.append(artistList);
+              thing2.append("<a><p onclick=\"play(\'"+json.preview_url+"\')\"> Click to play/pause a preview of this song </p></a>")
+              break;
             default:
 
           }
         });
       }
 
+      function play(audio){
+        currentAudio.pause();
+        if (audio == currentAudio.src){
+          currentAudio = new Audio();
+          return;
+        }
+        currentAudio = new Audio();
+        currentAudio.src=audio;
+        currentAudio.play();
+      }
+
       $(document).ready(function(){
-        
+
       });
     </script>
   </head>
@@ -109,7 +178,7 @@
       Type: <select id="type">
         <option id="album" value="album"> Album </option>
         <option id="artist" value="artist"> Artist </option>
-        <option id="playlist" value="playlist"> Playlist </option>
+        <!-- option id="playlist" value="playlist"> Playlist </option -->
         <option id="track" value="track"> Track </option>
       </select>
       <input type="button" onclick="search()" value="Search!" />
